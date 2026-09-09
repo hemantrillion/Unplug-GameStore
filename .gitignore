@@ -17,3 +17,6 @@ apps/android/android/app/build/
 *.log
 *.keystore
 *.jks
+
+__pycache__/
+*.pyc
