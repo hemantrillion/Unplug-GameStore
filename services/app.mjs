@@ -10,12 +10,14 @@ import { token, digest, passwordHash, passwordMatches, fail, text, email, passwo
 import { validateGame } from './contracts.mjs';
 import { onlineRoutes } from './online.mjs';
 import { newTotpSecret, verifyTotp } from './totp.mjs';
+import { rebuildAndDeploy, getPackagerStatus } from './packager.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 export async function createApp(options={}) {
   const production=options.production ?? process.env.NODE_ENV==='production';
   const origin=options.origin || process.env.PUBLIC_ORIGIN || 'http://127.0.0.1:3000';
   const dataDir=path.resolve(options.dataDir || process.env.DATA_DIR || '.local-data');
+  const enablePackager=options.packager ?? !options.allowTestHost;
   if (production && (!origin.startsWith('https://') || !process.env.SMTP_URL || !process.env.MAIL_FROM)) throw new Error('Production requires PUBLIC_ORIGIN HTTPS, SMTP_URL and MAIL_FROM.');
   await mkdir(dataDir,{recursive:true});
   await mkdir(path.join(dataDir,'mail'),{recursive:true});
@@ -272,7 +274,11 @@ export async function createApp(options={}) {
       run('UPDATE releases SET state=?,approved_digest=? WHERE id=?',decision,decision==='approved'?r.sha256:null,r.id);
       run('INSERT INTO reviews VALUES(?,?,?,?,?,?,?,?)',randomUUID(),r.id,req.user.id,decision,feedback,r.sha256,JSON.stringify(checklist),Date.now());
       audit(req.user.id,`release.${decision}`,r.id);notify(r.owner_id,`${r.title} ${r.version}: ${decision.replaceAll('_',' ')}. ${feedback}`);
-    });res.json({ok:true});
+    });
+    if(decision==='approved' && enablePackager) {
+      rebuildAndDeploy({db,dataDir}).catch(e=>console.error('[Packager auto-deploy error]:',e));
+    }
+    res.json({ok:true});
   });
   app.post('/api/activate',user(['admin']),write,(req,res)=>{
     const reason=text(req.body.reason,'Reason',3,500);
@@ -286,7 +292,11 @@ export async function createApp(options={}) {
       run('INSERT INTO deployments VALUES(?,?,?,?,?,?,?,?)',randomUUID(),g.id,r.id,g.active_release,g.revision+1,req.user.id,reason,Date.now());
       audit(req.user.id,'release.activated',r.id,reason);notify(r.owner_id,`${r.title} ${r.version} is live. Deployment revision ${g.revision+1}.`);
       return{revision:g.revision+1};
-    });res.json({ok:true,...result});
+    });
+    if(enablePackager) {
+      rebuildAndDeploy({db,dataDir}).catch(e=>console.error('[Packager auto-deploy error]:',e));
+    }
+    res.json({ok:true,...result});
   });
   app.post('/api/games/:id/availability',user(['admin']),write,(req,res)=>{
     const g=one('SELECT * FROM games WHERE id=?',req.params.id);
@@ -324,6 +334,11 @@ export async function createApp(options={}) {
     transaction(db,()=>{run('UPDATE users SET role=?,suspended=? WHERE id=?',req.body.role,Number(req.body.suspended),req.params.id);run('DELETE FROM sessions WHERE user_id=?',req.params.id);audit(req.user.id,'account.permissions_changed',req.params.id,JSON.stringify(req.body));});res.json({ok:true});
   });
   app.get('/api/admin/audit',user(['admin']),(req,res)=>res.json({events:all('SELECT * FROM audit ORDER BY created DESC LIMIT 200')}));
+  app.get('/api/packager/status',(req,res)=>res.json(getPackagerStatus()));
+  app.post('/api/admin/rebuild-apk',user(['admin']),write,async(req,res)=>{
+    rebuildAndDeploy({db,dataDir}).catch(e=>console.error('[Packager manual-deploy error]:',e));
+    res.json({ok:true,message:'Rebuild and deployment pipeline triggered.'});
+  });
   onlineRoutes(app,{db,user,write,limit:mutationLimit});
   app.use('/api',(req,res)=>res.status(404).json({error:'Endpoint not found.'}));
   app.use(express.static(path.join(root,'web'),{dotfiles:'deny',etag:true,maxAge:0,setHeaders(res,file){if(file.endsWith('sw.js'))res.setHeader('Cache-Control','no-cache');}}));

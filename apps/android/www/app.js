@@ -1,266 +1,246 @@
-﻿// UNPLUG Mobile Game App Engine & Store
+﻿// UNPLUG Mobile Arcade Engine
 (() => {
   'use strict';
 
-  // State
-  let state = {
-    lives: parseInt(localStorage.getItem('unplug_lives') || '3', 10),
-    hints: parseInt(localStorage.getItem('unplug_hints') || '3', 10),
-    highScore: parseInt(localStorage.getItem('unplug_highscore') || '0', 10),
-    adFree: localStorage.getItem('unplug_adfree') === 'true',
-    activeGame: null,
-    pendingReward: null,
-    adTimerInterval: null
+  // Catalog of approved games (updated by UNPLUG build pipeline)
+  const CATALOG = window.UNPLUG_CATALOG || [
+    {
+      id: 'snake',
+      title: 'Neon Trail (Snake)',
+      description: 'Collect glowing sparks and steer your neon trail across the cyber grid.',
+      category: 'Retro Arcade',
+      icon: '🐍',
+      version: '1.0.0',
+      color: '#9271cf',
+      isNew: true
+    }
+  ];
+
+  // Game icons fallback map
+  const GAME_ICONS = {
+    snake: '🐍',
+    bounce: '🏓',
+    memory: '🌸',
+    space_dodge: '🚀'
   };
 
-  const gameTitles = {
-    bounce: 'Bounce Arcade',
-    snake: 'Neon Trail (Snake)',
-    memory: 'Memory Garden',
-    space_dodge: 'Space Dodge'
-  };
+  let activeGameId = null;
+  let adCountdown = 5;
+  let adInterval = null;
 
-  function updateHUD() {
-    document.getElementById('hud-lives').textContent = state.lives;
-    document.getElementById('hud-hints').textContent = state.hints;
-    document.getElementById('hud-score').textContent = state.highScore;
-
-    const adFreeBtn = document.getElementById('adfree-btn');
-    const passStatus = document.getElementById('pass-toggle-status');
-
-    if (state.adFree) {
-      adFreeBtn.textContent = '💎 Ad-Free: ON';
-      adFreeBtn.classList.add('active');
-      if (passStatus) {
-        passStatus.textContent = 'ACTIVE (Unlimited Free Perks)';
-        passStatus.style.color = 'var(--green)';
-      }
-    } else {
-      adFreeBtn.textContent = '⭐ Go Ad-Free';
-      adFreeBtn.classList.remove('active');
-      if (passStatus) {
-        passStatus.textContent = 'INACTIVE (Ads Enabled)';
-        passStatus.style.color = 'var(--red)';
-      }
-    }
-
-    // High scores per game
-    for (const key of ['bounce', 'snake', 'memory', 'space_dodge']) {
-      const best = localStorage.getItem('unplug_best_' + key) || '0';
-      const el = document.getElementById('score-' + (key === 'space_dodge' ? 'space' : key));
-      if (el) el.textContent = 'Best: ' + best;
-    }
+  function getBestScore(gameId) {
+    return parseInt(localStorage.getItem('unplug_best_' + gameId) || '0', 10);
   }
 
-  // Launch Game
-  window.launchGame = function(gameId, customSrc = null) {
-    state.activeGame = gameId;
-    const title = gameTitles[gameId] || 'Custom Game';
-    document.getElementById('active-game-title').textContent = title;
-    
-    const frame = document.getElementById('game-frame');
-    if (customSrc) {
-      frame.src = customSrc;
-    } else {
-      frame.src = 'games/' + gameId + '.html';
+  function setBestScore(gameId, score) {
+    const current = getBestScore(gameId);
+    if (score > current) {
+      localStorage.setItem('unplug_best_' + gameId, score);
+      return true;
+    }
+    return false;
+  }
+
+  function renderCatalog() {
+    const container = document.getElementById('games-container');
+    const statusPill = document.getElementById('catalog-status');
+
+    if (!container) return;
+
+    if (!CATALOG || CATALOG.length === 0) {
+      container.innerHTML = `
+        <div class="empty-shelf">
+          <div style="font-size:40px;">🕹️</div>
+          <h3>No Games Available</h3>
+          <p>Approve and activate a game in the UNPLUG Workspace to add it to your mobile console.</p>
+        </div>
+      `;
+      if (statusPill) statusPill.textContent = '● 0 Games Ready';
+      return;
     }
 
-    document.getElementById('player-modal').classList.add('open');
-  };
+    if (statusPill) {
+      statusPill.textContent = `● ${CATALOG.length} ${CATALOG.length === 1 ? 'Game' : 'Games'} Ready`;
+    }
 
-  window.closeGame = function() {
+    container.innerHTML = CATALOG.map((game, index) => {
+      const best = getBestScore(game.id);
+      const icon = game.icon || GAME_ICONS[game.id] || '🎮';
+      const isFeatured = index === 0;
+
+      return `
+        <article class="game-card ${isFeatured ? 'featured' : ''}" data-game="${escapeHtml(game.id)}">
+          <div class="card-topbar">
+            <div class="badge-row">
+              <span class="badge badge-verified">● Verified & Approved</span>
+              ${game.isNew ? '<span class="badge badge-new">✨ LIVE RELEASE</span>' : ''}
+            </div>
+            <span class="card-score-pill" id="best-${escapeHtml(game.id)}">🏆 Best: ${best}</span>
+          </div>
+
+          <div class="card-body">
+            <div class="card-icon-box" style="background: ${escapeHtml(game.color || '#6366f1')}22; border-color: ${escapeHtml(game.color || '#6366f1')}55;">
+              <span>${icon}</span>
+            </div>
+            <div class="card-details">
+              <h2 class="card-title">${escapeHtml(game.title)}</h2>
+              <p class="card-desc">${escapeHtml(game.description)}</p>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <button class="play-btn" onclick="window.UNPLUG.play('${escapeHtml(game.id)}')">
+              <span>▶</span> PLAY NOW
+            </button>
+            <div class="card-meta">
+              <span>v${escapeHtml(game.version || '1.0.0')} · Offline First</span>
+              <span>Touch & Swipe Ready</span>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function launchGame(gameId) {
+    const game = CATALOG.find(g => g.id === gameId);
+    if (!game) return;
+
+    activeGameId = gameId;
+    const modal = document.getElementById('player-modal');
+    const titleEl = document.getElementById('active-game-title');
+    const bestEl = document.getElementById('player-best-score');
     const frame = document.getElementById('game-frame');
+
+    if (titleEl) titleEl.textContent = game.title;
+    if (bestEl) bestEl.textContent = 'Best: ' + getBestScore(gameId);
+
+    frame.src = 'games/' + encodeURIComponent(gameId) + '.html';
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function exitGame() {
+    const modal = document.getElementById('player-modal');
+    const frame = document.getElementById('game-frame');
+
     frame.src = 'about:blank';
-    document.getElementById('player-modal').classList.remove('open');
-    state.activeGame = null;
-    updateHUD();
-  };
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    activeGameId = null;
 
-  window.restartActiveGame = function() {
-    if (state.activeGame) {
-      launchGame(state.activeGame);
-    }
-  };
-
-  // In-Game Hint
-  window.requestInGameHint = function() {
-    if (state.adFree || state.hints > 0) {
-      if (!state.adFree) {
-        state.hints--;
-        localStorage.setItem('unplug_hints', state.hints);
-        updateHUD();
-      }
-      sendToGame({ type: 'unplug:hint' });
-    } else {
-      // Prompt ad for hints
-      state.pendingReward = 'hint_refill';
-      openAdOverlay();
-    }
-  };
-
-  // Send message to active game iframe
-  function sendToGame(msg) {
-    const frame = document.getElementById('game-frame');
-    if (frame && frame.contentWindow) {
-      frame.contentWindow.postMessage(msg, '*');
-    }
+    closeAdModal();
+    renderCatalog();
   }
 
-  // Handle Game Messages
-  window.addEventListener('message', e => {
-    if (!e.data) return;
-    const data = e.data;
-
-    // Score update
-    if (data.type === 'unplug:score' && typeof data.score === 'number') {
-      if (data.score > state.highScore) {
-        state.highScore = data.score;
-        localStorage.setItem('unplug_highscore', state.highScore);
-      }
-      if (data.game) {
-        const key = 'unplug_best_' + data.game;
-        const currentBest = parseInt(localStorage.getItem(key) || '0', 10);
-        if (data.score > currentBest) {
-          localStorage.setItem(key, data.score);
-        }
-      }
-      updateHUD();
+  function restartGame() {
+    if (activeGameId) {
+      const frame = document.getElementById('game-frame');
+      frame.src = 'games/' + encodeURIComponent(activeGameId) + '.html';
+      closeAdModal();
     }
-
-    // Game Over Encounter
-    if (data.type === 'unplug:gameover') {
-      if (data.score > state.highScore) {
-        state.highScore = data.score;
-        localStorage.setItem('unplug_highscore', state.highScore);
-        updateHUD();
-      }
-
-      if (state.adFree) {
-        // Free instant revive!
-        setTimeout(() => {
-          if (confirm('💎 Ad-Free Pass Active!\nWould you like an instant free revive to continue playing?')) {
-            sendToGame({ type: 'unplug:revive' });
-          }
-        }, 300);
-      } else {
-        // Offer Rewarded Ad for Extra Life
-        setTimeout(() => {
-          if (confirm('💔 Game Over! (Score: ' + data.score + ')\n\nWatch a quick 5-second sponsor ad to get +1 Extra Life and continue playing?')) {
-            state.pendingReward = 'revive';
-            openAdOverlay();
-          }
-        }, 300);
-      }
-    }
-
-    if (data.type === 'unplug:req_hint') {
-      requestInGameHint();
-    }
-  });
+  }
 
   // Rewarded Ad Simulation
-  function openAdOverlay() {
+  function showAdModal(score) {
     const overlay = document.getElementById('ad-overlay');
-    const timerEl = document.getElementById('ad-timer');
-    const claimBtn = document.getElementById('claim-ad-btn');
+    const claimBtn = document.getElementById('claim-reward-btn');
+    const timerEl = document.getElementById('ad-countdown');
+    const bar = document.getElementById('ad-progress-bar');
 
-    let seconds = 5;
-    timerEl.textContent = seconds;
+    adCountdown = 5;
+    timerEl.textContent = adCountdown;
+    bar.style.width = '0%';
     claimBtn.disabled = true;
-    claimBtn.textContent = 'Reward Locking (' + seconds + 's)...';
+    claimBtn.textContent = 'Watching Sponsor (5s)...';
     overlay.classList.add('open');
+    overlay.setAttribute('aria-hidden', 'false');
 
-    clearInterval(state.adTimerInterval);
-    state.adTimerInterval = setInterval(() => {
-      seconds--;
-      if (seconds > 0) {
-        timerEl.textContent = seconds;
-        claimBtn.textContent = 'Reward Locking (' + seconds + 's)...';
+    clearInterval(adInterval);
+    adInterval = setInterval(() => {
+      adCountdown--;
+      const progress = ((5 - adCountdown) / 5) * 100;
+      bar.style.width = progress + '%';
+
+      if (adCountdown > 0) {
+        timerEl.textContent = adCountdown;
+        claimBtn.textContent = `Watching Sponsor (${adCountdown}s)...`;
       } else {
-        clearInterval(state.adTimerInterval);
-        timerEl.textContent = '✓ Ready';
+        clearInterval(adInterval);
+        timerEl.textContent = '✓';
+        bar.style.width = '100%';
         claimBtn.disabled = false;
-        claimBtn.textContent = '🎉 Claim ' + (state.pendingReward === 'revive' ? '+1 Extra Life' : '+3 Hints');
+        claimBtn.textContent = '🎉 Claim Extra Life & Revive!';
       }
     }, 1000);
   }
 
-  window.closeAdOverlay = function() {
-    clearInterval(state.adTimerInterval);
-    document.getElementById('ad-overlay').classList.remove('open');
-    state.pendingReward = null;
-  };
+  function closeAdModal() {
+    clearInterval(adInterval);
+    const overlay = document.getElementById('ad-overlay');
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
 
-  window.claimAdReward = function() {
-    if (state.pendingReward === 'revive') {
-      state.lives++;
-      localStorage.setItem('unplug_lives', state.lives);
-      sendToGame({ type: 'unplug:revive' });
-      alert('🎉 Reward Claimed: +1 Extra Life granted! Resuming game...');
-    } else if (state.pendingReward === 'hint_refill') {
-      state.hints += 3;
-      localStorage.setItem('unplug_hints', state.hints);
-      sendToGame({ type: 'unplug:hint' });
-      alert('🎉 Reward Claimed: +3 Hints added to your account!');
+  function claimReward() {
+    const frame = document.getElementById('game-frame');
+    if (frame && frame.contentWindow) {
+      frame.contentWindow.postMessage({ type: 'unplug:revive' }, '*');
     }
-    updateHUD();
-    closeAdOverlay();
-  };
+    closeAdModal();
+  }
 
-  // Ad-Free Pass Dialog
-  document.getElementById('adfree-btn').addEventListener('click', () => {
-    document.getElementById('adfree-modal').classList.add('open');
+  // Listen for iframe messages
+  window.addEventListener('message', e => {
+    if (!e.data || typeof e.data !== 'object') return;
+
+    if (e.data.type === 'unplug:score' && typeof e.data.score === 'number' && activeGameId) {
+      setBestScore(activeGameId, e.data.score);
+      const bestEl = document.getElementById('player-best-score');
+      if (bestEl) bestEl.textContent = 'Best: ' + getBestScore(activeGameId);
+    }
+
+    if (e.data.type === 'unplug:gameover') {
+      const score = typeof e.data.score === 'number' ? e.data.score : 0;
+      if (activeGameId) {
+        setBestScore(activeGameId, score);
+        const bestEl = document.getElementById('player-best-score');
+        if (bestEl) bestEl.textContent = 'Best: ' + getBestScore(activeGameId);
+      }
+      setTimeout(() => {
+        showAdModal(score);
+      }, 300);
+    }
   });
 
-  window.closeAdFreeModal = function() {
-    document.getElementById('adfree-modal').classList.remove('open');
-  };
+  // UI Event bindings
+  document.getElementById('btn-exit-game')?.addEventListener('click', exitGame);
+  document.getElementById('btn-restart-game')?.addEventListener('click', restartGame);
+  document.getElementById('claim-reward-btn')?.addEventListener('click', claimReward);
+  document.getElementById('skip-ad-btn')?.addEventListener('click', closeAdModal);
 
-  window.toggleAdFreePass = function() {
-    state.adFree = !state.adFree;
-    localStorage.setItem('unplug_adfree', state.adFree ? 'true' : 'false');
-    updateHUD();
-    alert(state.adFree ? '💎 Ad-Free Pass Activated! Unlimited free revives and hints unlocked.' : 'Ad-Free Pass deactivated.');
-    closeAdFreeModal();
-  };
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 
-  // Developer Game Import
-  document.getElementById('dev-btn').addEventListener('click', () => {
-    document.getElementById('dev-modal').classList.add('open');
-  });
-
-  window.openDevModal = function() {
-    document.getElementById('dev-modal').classList.add('open');
-  };
-
-  window.closeDevModal = function() {
-    document.getElementById('dev-modal').classList.remove('open');
-  };
-
-  window.importCustomGame = function() {
-    const fileInput = document.getElementById('game-file-input');
-    const codeInput = document.getElementById('game-code-input').value.trim();
-
-    if (fileInput.files && fileInput.files[0]) {
-      const file = fileInput.files[0];
-      const reader = new FileReader();
-      reader.onload = e => {
-        const blob = new Blob([e.target.result], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        closeDevModal();
-        launchGame('custom', url);
-      };
-      reader.readAsText(file);
-    } else if (codeInput) {
-      const blob = new Blob([codeInput], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      closeDevModal();
-      launchGame('custom', url);
-    } else {
-      alert('Please select an HTML file or enter HTML5 game code.');
+  // Global interface
+  window.UNPLUG = {
+    play: launchGame,
+    exit: exitGame,
+    restart: restartGame,
+    setCatalog: function(games) {
+      if (Array.isArray(games)) {
+        window.UNPLUG_CATALOG = games;
+        renderCatalog();
+      }
     }
   };
 
-  // Initial Load
-  updateHUD();
+  // Initial render
+  renderCatalog();
 })();

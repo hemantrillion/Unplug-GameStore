@@ -2,164 +2,80 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <meta name="theme-color" content="#090d16">
-  <title>UNPLUG Games</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0e1a">
+  <title>UNPLUG Mobile Arcade</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Header -->
-  <header class="app-header">
-    <div class="brand-title">
-      🎮 UNPLUG<span>.</span>
-      <span class="brand-tag">GAMES</span>
-    </div>
-    <div class="header-actions">
-      <button id="adfree-btn" class="pass-badge">⭐ Go Ad-Free</button>
-      <button id="dev-btn" class="icon-btn" title="Developer Mode">⚡ Dev</button>
-    </div>
-  </header>
-
-  <!-- Economy HUD -->
-  <div class="hud-bar">
-    <div class="hud-item">❤️ Extra Lives: <b id="hud-lives">3</b></div>
-    <div class="hud-item">💡 Hints: <b id="hud-hints">3</b></div>
-    <div class="hud-item">🏆 High Score: <b id="hud-score">0</b></div>
-  </div>
-
-  <!-- Game Library -->
-  <main class="container">
-    <div class="section-title">
-      <span>Playable Game Library</span>
-      <small style="color:var(--green); font-size:12px;">● 100% Offline Ready</small>
-    </div>
-
-    <!-- Bounce Game Card -->
-    <article class="game-card">
-      <div class="card-top">
-        <h2 class="game-title">Bounce Arcade</h2>
-        <span class="game-badge badge-arcade">Arcade</span>
-      </div>
-      <p class="game-desc">Fast-paced paddle & ball arcade. Move the paddle to keep the ball alive and rack up points!</p>
-      <div class="card-bottom">
-        <span class="card-score" id="score-bounce">Best: 0</span>
-        <button class="play-btn" onclick="launchGame('bounce')">▶ PLAY BOUNCE</button>
-      </div>
-    </article>
-
-    <!-- Snake Game Card -->
-    <article class="game-card">
-      <div class="card-top">
-        <h2 class="game-title">Neon Trail (Snake)</h2>
-        <span class="game-badge badge-retro">Retro</span>
-      </div>
-      <p class="game-desc">Classic grid snake with glowing sparks. Swipe or use on-screen D-pad to guide the trail.</p>
-      <div class="card-bottom">
-        <span class="card-score" id="score-snake">Best: 0</span>
-        <button class="play-btn" onclick="launchGame('snake')">▶ PLAY SNAKE</button>
-      </div>
-    </article>
-
-    <!-- Memory Game Card -->
-    <article class="game-card">
-      <div class="card-top">
-        <h2 class="game-title">Memory Garden</h2>
-        <span class="game-badge badge-puzzle">Puzzle</span>
-      </div>
-      <p class="game-desc">Calm botanical pair matching. Flip tiles, test your memory, and use hints when stuck.</p>
-      <div class="card-bottom">
-        <span class="card-score" id="score-memory">Best: 0</span>
-        <button class="play-btn" onclick="launchGame('memory')">▶ PLAY MEMORY</button>
-      </div>
-    </article>
-
-    <!-- Space Dodge Game Card -->
-    <article class="game-card">
-      <div class="card-top">
-        <h2 class="game-title">Space Dodge</h2>
-        <span class="game-badge badge-space">Action</span>
-      </div>
-      <p class="game-desc">Maneuver your starship through a hazardous asteroid field and collect energy crystals.</p>
-      <div class="card-bottom">
-        <span class="card-score" id="score-space">Best: 0</span>
-        <button class="play-btn" onclick="launchGame('space_dodge')">▶ PLAY SPACE</button>
-      </div>
-    </article>
-
-    <!-- Developer Push Card -->
-    <article class="game-card" style="border-style:dashed; background:rgba(30,41,59,0.5)">
-      <div class="card-top">
-        <h2 class="game-title">⚡ Creator & Dev Portal</h2>
-        <span class="game-badge" style="background:#334155; color:#cbd5e1">Custom</span>
-      </div>
-      <p class="game-desc">Push or import a custom HTML5 game directly into this mobile store. Test local builds instantly!</p>
-      <div class="card-bottom">
-        <span style="font-size:12px; color:#94a3b8">Single-file HTML contract</span>
-        <button class="play-btn" style="background:#475569" onclick="openDevModal()">+ Import Game</button>
-      </div>
-    </article>
-  </main>
-
-  <!-- Fullscreen Game Play Modal -->
-  <div id="player-modal">
-    <div class="player-topbar">
-      <span class="player-game-title" id="active-game-title">Game Title</span>
-      <div class="player-controls">
-        <button class="icon-btn" id="in-game-hint-btn" onclick="requestInGameHint()">💡 Hint</button>
-        <button class="icon-btn" onclick="restartActiveGame()">🔄 Restart</button>
-        <button class="icon-btn" style="background:#dc2626" onclick="closeGame()">✕ Exit</button>
-      </div>
-    </div>
-    <iframe id="game-frame" class="game-frame" sandbox="allow-scripts allow-same-origin"></iframe>
-  </div>
-
-  <!-- Simulated Rewarded Ad Overlay -->
-  <div id="ad-overlay">
-    <div class="ad-box">
-      <div class="ad-sponsor-tag">⚡ SPONSORED REWARD AD</div>
-      <div class="ad-video-sim">
-        <h3 style="color:#38bdf8; margin-bottom:8px;">UNPLUG Gaming Engine</h3>
-        <p style="font-size:14px; color:#cbd5e1; line-height:1.4;">Zero Data Tracking. 100% Offline First. Pure HTML5 Canvas Gaming without Battery Drain.</p>
-        <div class="ad-countdown" id="ad-timer">5</div>
-        <small style="color:#64748b;">Watch until countdown ends to receive your reward.</small>
-      </div>
-      <button id="claim-ad-btn" class="ad-reward-btn" disabled onclick="claimAdReward()">Reward Locking (5s)...</button>
-      <button class="icon-btn" style="margin-top:12px; width:100%" onclick="closeAdOverlay()">Skip / Close</button>
-    </div>
-  </div>
-
-  <!-- Ad-Free Account / Pass Modal -->
-  <div id="adfree-modal" class="dialog-overlay">
-    <div class="dialog-card">
-      <h2 style="font-size:20px; color:#f59e0b; margin-bottom:8px;">⭐ UNPLUG Supporter Pass</h2>
-      <p style="font-size:14px; color:#cbd5e1; line-height:1.5; margin-bottom:16px;">
-        Enjoy an uninterrupted, 100% ad-free experience. Unlock unlimited instant revives and unlimited instant game hints without watching sponsor videos!
-      </p>
-      <div style="background:#0b0f19; padding:14px; border-radius:10px; margin-bottom:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span>Ad-Free Status:</span>
-          <b id="pass-toggle-status" style="color:var(--red);">INACTIVE</b>
+  <!-- Main Arcade Container -->
+  <div id="arcade-app">
+    <!-- Header -->
+    <header class="arcade-header">
+      <div class="brand">
+        <span class="brand-icon">🕹️</span>
+        <div class="brand-text">
+          <span class="brand-name">UNPLUG</span>
+          <span class="brand-sub">ARCADE</span>
         </div>
       </div>
-      <button class="play-btn" style="width:100%; margin-bottom:10px;" onclick="toggleAdFreePass()">Toggle Ad-Free Mode (Free Pass)</button>
-      <button class="icon-btn" style="width:100%" onclick="closeAdFreeModal()">Close</button>
+      <div class="header-status">
+        <span class="status-pill" id="catalog-status">● 1 Game Ready</span>
+      </div>
+    </header>
+
+    <!-- Games Shelf -->
+    <main class="arcade-main">
+      <div class="shelf-header">
+        <div>
+          <h1 class="shelf-title">Game Library</h1>
+          <p class="shelf-desc">Tap any approved game to play instantly. 100% offline ready.</p>
+        </div>
+      </div>
+
+      <!-- Dynamic Game Cards Container -->
+      <div id="games-container" class="games-shelf">
+        <!-- Injected dynamically based on approved catalog -->
+      </div>
+    </main>
+
+    <!-- Fullscreen Player Modal -->
+    <div id="player-modal" class="player-modal" aria-hidden="true">
+      <div class="player-header">
+        <div class="player-info">
+          <span class="player-game-title" id="active-game-title">Game Title</span>
+          <span class="player-best-badge" id="player-best-score">Best: 0</span>
+        </div>
+        <div class="player-actions">
+          <button class="player-btn btn-restart" id="btn-restart-game" title="Restart Game">🔄 Restart</button>
+          <button class="player-btn btn-exit" id="btn-exit-game" title="Exit to Library">✕ Exit</button>
+        </div>
+      </div>
+      <div class="player-viewport">
+        <iframe id="game-frame" class="game-frame" sandbox="allow-scripts allow-same-origin"></iframe>
+      </div>
+    </div>
+
+    <!-- Rewarded Ad Overlay -->
+    <div id="ad-overlay" class="dialog-overlay" aria-hidden="true">
+      <div class="dialog-card ad-dialog">
+        <div class="ad-tag">⚡ SPONSORED REWARD AD</div>
+        <div class="ad-visual">
+          <div class="ad-anim-spark">✨</div>
+          <h3>UNPLUG Mobile Engine</h3>
+          <p>Zero tracking. Verified sandboxed games. Instant offline play.</p>
+          <div class="ad-progress-box">
+            <div class="ad-progress-bar" id="ad-progress-bar"></div>
+          </div>
+          <div class="ad-timer-text">Reward unlocks in <b id="ad-countdown">5</b>s</div>
+        </div>
+        <button id="claim-reward-btn" class="primary-btn" disabled>Watching Sponsor...</button>
+        <button id="skip-ad-btn" class="text-btn">✕ Skip & End Run</button>
+      </div>
     </div>
   </div>
 
-  <!-- Developer Custom Game Modal -->
-  <div id="dev-modal" class="dialog-overlay">
-    <div class="dialog-card">
-      <h2 style="font-size:20px; color:#38bdf8; margin-bottom:8px;">⚡ Developer Game Importer</h2>
-      <p style="font-size:14px; color:#cbd5e1; line-height:1.4; margin-bottom:12px;">
-        Select an HTML game file from your device, or paste HTML5 game code to run it inside the UNPLUG sandbox.
-      </p>
-      <input type="file" id="game-file-input" accept=".html,.htm" style="margin-bottom:12px; color:#94a3b8; width:100%;">
-      <textarea id="game-code-input" placeholder="Or paste HTML5 canvas code here..." style="width:100%; height:90px; background:#0b0f19; border:1px solid #334155; color:#fff; padding:8px; border-radius:8px; font-family:monospace; font-size:12px; margin-bottom:12px;"></textarea>
-      <button class="play-btn" style="width:100%; margin-bottom:10px;" onclick="importCustomGame()">Run Custom Game</button>
-      <button class="icon-btn" style="width:100%" onclick="closeDevModal()">Cancel</button>
-    </div>
-  </div>
-
+  <script src="catalog.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
