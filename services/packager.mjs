@@ -121,7 +121,7 @@ export async function rebuildAndDeploy(options = {}) {
     const nativePublicDir = path.join(root, 'apps', 'android', 'android', 'app', 'src', 'main', 'assets', 'public');
     await mkdir(nativePublicDir, { recursive: true });
 
-    for (const file of ['index.html', 'styles.css', 'app.js', 'catalog.js']) {
+    for (const file of ['index.html', 'styles.css', 'app.js', 'catalog.js', 'icon.png']) {
       const src = path.join(wwwDir, file);
       if (existsSync(src)) {
         await copyFile(src, path.join(nativePublicDir, file));
