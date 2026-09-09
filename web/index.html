@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f6f5f1"><meta name="description" content="UNPLUG: a thoughtful home for small games. Play offline, publish with confidence.">
+  <title>UNPLUG — A little room to play</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css"><script type="module" src="/app.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#library"><span class="brand-mark">u</span>unplug<span class="brand-dot">.</span></a>
+    <p class="nav-caption">YOUR LITTLE ESCAPE</p>
+    <nav aria-label="Main navigation">
+      <a href="#library" data-view="library"><span aria-hidden="true">▦</span> Discover games</a>
+      <a href="#downloads" data-view="downloads"><span aria-hidden="true">↓</span> My downloads <b id="download-count">0</b></a>
+      <a href="#online" data-view="online"><span aria-hidden="true">◎</span> Play together</a>
+      <span class="nav-divider"></span>
+      <a href="#workspace" data-view="workspace"><span aria-hidden="true">◇</span> Creator workspace</a>
+      <a href="#account" data-view="account"><span aria-hidden="true">◉</span> My account</a>
+    </nav>
+    <div class="sidebar-bottom"><span class="connection-dot"></span><span id="connection">Connecting…</span><small>Small games. Big breathing room.</small></div>
+  </aside>
+  <div class="main-shell">
+    <header class="topbar"><span id="breadcrumb">Your next good break</span><div><button id="install" class="button subtle" hidden>Install app</button><button id="update" class="button subtle" hidden>Update available</button><button id="account-button" class="avatar-button">Sign in <span>↗</span></button></div></header>
+    <main id="main" tabindex="-1"></main>
+    <footer class="footer"><span>Made for the joy of it. <strong>UNPLUG</strong></span><div><a href="/privacy.html">Privacy & data</a><a href="/help.html">Help & game contract</a><a href="https://hekugo.online/">HeKuGo ↗</a></div></footer>
+  </div>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="modal"><div id="modal-content"></div><button id="modal-close" class="modal-close" aria-label="Close dialog">×</button></dialog>
+  <dialog id="player-dialog"><div class="player-header"><div><strong id="player-title">Game</strong><span id="player-status" role="status">Starting…</span></div><button id="player-close" class="button subtle">Close game ×</button></div><div id="runtime"></div></dialog>
+</body></html>

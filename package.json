@@ -1,0 +1,23 @@
+{
+  "name": "unplug-game-store",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24 <25" },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env services/start.mjs",
+    "dev": "node --watch --env-file-if-exists=.env services/start.mjs",
+    "check": "node tools/check.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:browser": "playwright test",
+    "backup": "node --env-file-if-exists=.env tools/backup.mjs",
+    "docs": "python tools/build-docs.py"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.0",
+    "nodemailer": "^10.0.1",
+    "parse5": "^8.0.0"
+  },
+  "devDependencies": { "@playwright/test": "^1.58.0" }
+}

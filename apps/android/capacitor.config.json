@@ -1,0 +1,7 @@
+{
+  "appId":"online.hekugo.unplug.player",
+  "appName":"UNPLUG",
+  "webDir":"www",
+  "android":{"allowMixedContent":false},
+  "server":{"androidScheme":"https"}
+}

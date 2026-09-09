@@ -1,0 +1,6 @@
+{
+  "name":"unplug-android", "version":"0.1.0", "private":true, "type":"module",
+  "scripts":{"sync":"cap sync android","open":"cap open android"},
+  "dependencies":{"@capacitor/core":"^8.5.1","@capacitor/android":"^8.5.1"},
+  "devDependencies":{"@capacitor/cli":"8.4.3"}
+}

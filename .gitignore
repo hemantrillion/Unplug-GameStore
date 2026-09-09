@@ -1,0 +1,19 @@
+# Separate website checkout; its changes belong in hemantrillion/hekugo.online.
+hekugo.online/
+node_modules/
+.env
+.env.*
+!.env.example
+.local-data/
+artifacts/
+dist/
+test-results/
+playwright-report/
+apps/desktop/node_modules/
+apps/desktop/dist/
+apps/android/node_modules/
+apps/android/android/.gradle/
+apps/android/android/app/build/
+*.log
+*.keystore
+*.jks

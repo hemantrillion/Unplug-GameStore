@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bounce</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#fbf2e8;color:#35291e;font:16px system-ui;text-align:center}main{max-width:760px;margin:auto;padding:22px}h1{margin:0;font-size:36px}p{line-height:1.5}canvas{width:100%;background:#fffaf4;border-radius:20px;touch-action:none;outline-offset:4px}button{border:0;border-radius:10px;background:#995317;color:white;padding:12px 22px;font:inherit;cursor:pointer}button:focus-visible{outline:3px solid #222;outline-offset:3px}
+</style></head><body><main><h1>Bounce</h1><p>Move the paddle with your pointer, touch, or arrow keys.</p><canvas id="game" width="640" height="380" tabindex="0" aria-label="Paddle game. Use left and right arrows."></canvas><p id="score" role="status">Score: 0</p><button id="restart">Start again</button></main>
+<script>
+(()=>{'use strict';const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d'),label=document.querySelector('#score');let x,y,vx,vy,paddle,score,running,previous=performance.now();const keys=new Set();
+function reset(){x=320;y=150;vx=170;vy=-200;paddle=260;score=0;running=true;label.textContent='Score: 0';canvas.focus();}
+function clamp(){paddle=Math.max(0,Math.min(520,paddle));}
+function pointer(e){const r=canvas.getBoundingClientRect();paddle=(e.clientX-r.left)*640/r.width-60;clamp();}
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);pointer(e);canvas.focus();});canvas.addEventListener('pointermove',pointer);
+window.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();keys.add(e.key);}});window.addEventListener('keyup',e=>keys.delete(e.key));window.addEventListener('blur',()=>keys.clear());document.querySelector('#restart').addEventListener('click',reset);
+function frame(now){const dt=Math.min((now-previous)/1000,.025);previous=now;if(running){if(keys.has('ArrowLeft'))paddle-=390*dt;if(keys.has('ArrowRight'))paddle+=390*dt;clamp();const bottom=y+10;x+=vx*dt;y+=vy*dt;if(x<10){x=10;vx=Math.abs(vx);}if(x>630){x=630;vx=-Math.abs(vx);}if(y<10){y=10;vy=Math.abs(vy);}if(vy>0&&bottom<=340&&y+10>=340&&x+10>=paddle&&x-10<=paddle+120){y=330;vy=-Math.min(420,Math.abs(vy)+5);vx=(x-paddle-60)/60*270;score++;label.textContent='Score: '+score;}if(y>395){running=false;label.textContent='Great run! Score: '+score+'. Start again to beat it.';}}
+ctx.clearRect(0,0,640,380);ctx.fillStyle='#ead8c3';for(let i=1;i<8;i++){ctx.beginPath();ctx.arc(i*80,35,3,0,Math.PI*2);ctx.fill();}ctx.fillStyle='#995317';ctx.beginPath();ctx.roundRect(paddle,340,120,13,6);ctx.fill();ctx.fillStyle='#e99a40';ctx.beginPath();ctx.arc(x,y,10,0,Math.PI*2);ctx.fill();requestAnimationFrame(frame);}reset();requestAnimationFrame(frame);window.parent.postMessage({type:'unplug:ready'},'*');})();
+</script></body></html>

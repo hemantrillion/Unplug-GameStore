@@ -1,0 +1,19 @@
+[Unit]
+Description=UNPLUG publishing platform
+After=network.target
+[Service]
+Type=simple
+User=unplug
+Group=unplug
+WorkingDirectory=/srv/unplug/app
+ExecStart=/usr/local/bin/node --env-file=.env services/start.mjs
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/unplug/data
+UMask=0077
+[Install]
+WantedBy=multi-user.target

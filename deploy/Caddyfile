@@ -1,0 +1,4 @@
+# Replace with the actual production hostname before deployment.
+unplug.example.com {
+  reverse_proxy 127.0.0.1:3000
+}

@@ -1,0 +1,53 @@
+import { test, expect } from '@playwright/test';
+
+test('admin plays and approves a candidate; signed download survives offline cold reload',async({page,context})=>{
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('/');
+  await expect(page.getByRole('heading',{name:'A little room to play.'})).toBeVisible();
+  await page.getByRole('button',{name:'Sign in'}).click();
+  await page.getByLabel('Email address').fill('admin@test.local');
+  await page.getByLabel('Password',{exact:true}).fill('browser-test-password-123');
+  await page.locator('#auth-submit').click();
+  await expect(page.getByRole('heading',{name:'A good release starts here.'})).toBeVisible();
+  const row=page.locator('.release-row').filter({has:page.getByRole('heading',{name:'Bounce 1.0.0'})});
+  await row.getByRole('button',{name:'Preview ↗'}).click();
+  await expect(page.locator('#player-status')).toHaveText('Preview running · complete the review after play-testing');
+  await expect(page.frameLocator('#runtime iframe').frameLocator('iframe').getByRole('heading',{name:'Bounce'})).toBeVisible();
+  await page.getByRole('button',{name:'Close game ×'}).click();
+  await row.getByRole('button',{name:'Review',exact:true}).click();
+  await page.getByLabel('I played this candidate').check();
+  await page.getByLabel('I reviewed content').check();
+  await page.getByLabel('I checked controls').check();
+  await page.getByLabel('Feedback',{exact:true}).fill('Browser play-test completed; core controls reviewed.');
+  await page.getByRole('button',{name:'Record review'}).click();
+  await expect(page.locator('#modal')).not.toBeVisible();
+  await row.getByRole('button',{name:'Activate / roll back'}).click();
+  await page.getByLabel('Reason',{exact:true}).fill('First browser-tested release');
+  await page.getByRole('button',{name:'Activate release',exact:true}).click();
+  await expect(page.locator('#modal')).not.toBeVisible();
+  await page.getByRole('link',{name:'Discover games'}).click();
+  await page.getByRole('button',{name:'Download ↓'}).click();
+  await expect(page.getByRole('button',{name:'Play game ↗'})).toBeVisible();
+  await page.screenshot({path:'test-results/library-desktop.png',fullPage:true});
+  await page.getByRole('button',{name:'Play game ↗'}).click();
+  await expect(page.locator('#player-status')).toHaveText('Running · verified local release');
+  const sandbox=await page.frameLocator('#runtime iframe').frameLocator('iframe').locator('body').evaluate(()=>{try{localStorage.getItem('test');return false;}catch{return true;}});
+  expect(sandbox).toBe(true);
+  await page.getByRole('button',{name:'Close game ×'}).click();
+  await page.evaluate(()=>navigator.serviceWorker.ready);
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByRole('heading',{name:'A little room to play.'})).toBeVisible();
+  await page.getByRole('link',{name:'My downloads'}).click();
+  await page.getByRole('button',{name:'Play game ↗'}).click();
+  await expect(page.locator('#player-status')).toHaveText('Running · verified local release');
+  expect(errors).toEqual([]);
+});
+
+test('mobile navigation fits and catalog renders without horizontal overflow',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/');
+  await expect(page.getByRole('heading',{name:'A little room to play.'})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:'test-results/library-mobile.png',fullPage:true});
+});

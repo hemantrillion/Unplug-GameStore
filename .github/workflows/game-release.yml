@@ -1,0 +1,69 @@
+name: Package committed game and stage candidate
+on:
+  workflow_dispatch:
+    inputs:
+      game:
+        description: First-party game ID
+        required: true
+        type: choice
+        options: [bounce, memory, snake]
+      version:
+        description: New MAJOR.MINOR.PATCH version
+        required: true
+        type: string
+      stage:
+        description: Stage exact artifact on configured service
+        default: false
+        type: boolean
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - name: Package exact committed source
+        env:
+          GAME: ${{ inputs.game }}
+          VERSION: ${{ inputs.version }}
+        run: node tools/package-release.mjs "$GAME" "$VERSION"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: game-candidate
+          path: artifacts/releases/
+          if-no-files-found: error
+          retention-days: 30
+  stage:
+    if: ${{ inputs.stage }}
+    needs: package
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: game-candidate
+          path: candidate
+      - name: Stage without rebuilding; admin review still required
+        env:
+          API: ${{ secrets.UNPLUG_API_URL }}
+          TOKEN: ${{ secrets.UNPLUG_CI_TOKEN }}
+          GAME: ${{ inputs.game }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          case "$API" in https://*) ;; *) exit 1 ;; esac
+          test -n "$TOKEN"
+          curl --fail-with-body --max-time 30 \
+            --header "Authorization: Bearer $TOKEN" \
+            --header 'Content-Type: application/json' \
+            --data-binary "@candidate/$GAME-$VERSION/candidate.json" \
+            "${API%/}/api/ci/candidates"

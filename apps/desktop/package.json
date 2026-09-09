@@ -1,0 +1,14 @@
+{
+  "name":"unplug-desktop", "version":"0.1.0", "private":true,
+  "description":"UNPLUG connected desktop publishing workspace",
+  "author":"HeKuGo", "license":"UNLICENSED", "main":"main.cjs",
+  "scripts":{"start":"electron .","pack":"electron-builder --dir","dist":"electron-builder --win nsis"},
+  "devDependencies":{"electron":"^44.3.0","electron-builder":"^26.15.3"},
+  "build":{
+    "appId":"online.hekugo.unplug.desktop","productName":"UNPLUG Desktop",
+    "files":["main.cjs","setup.html","setup.js"],
+    "directories":{"output":"dist"},
+    "win":{"target":"nsis","artifactName":"UNPLUG-Desktop-${version}-${arch}-Setup.${ext}"},
+    "nsis":{"oneClick":false,"allowToChangeInstallationDirectory":true,"deleteAppDataOnUninstall":false}
+  }
+}
