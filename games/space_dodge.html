@@ -1,0 +1,279 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Space Dodge</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0b0f19; color: #f1f5f9; font-family: system-ui, sans-serif; text-align: center; overflow: hidden; }
+    main { max-width: 480px; margin: auto; padding: 12px; }
+    h1 { font-size: 24px; color: #38bdf8; margin-bottom: 4px; }
+    canvas { width: 100%; max-width: 400px; height: auto; background: #030712; border: 2px solid #1e293b; border-radius: 12px; touch-action: none; display: block; margin: 8px auto; }
+    .hud { display: flex; justify-content: space-between; font-size: 15px; font-weight: 600; padding: 4px 10px; color: #94a3b8; }
+    .controls { display: flex; justify-content: center; gap: 16px; margin-top: 8px; }
+    .btn { background: #0284c7; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+    .btn:active { background: #0369a1; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Space Dodge</h1>
+    <div class="hud">
+      <span id="score">Score: 0</span>
+      <span id="lives">Lives: ❤️❤️❤️</span>
+      <span id="crystals">💎 0</span>
+    </div>
+    <canvas id="game" width="360" height="480"></canvas>
+    <div class="controls">
+      <button class="btn" id="left-btn">◀ Left</button>
+      <button class="btn" id="right-btn">Right ▶</button>
+      <button class="btn" id="restart-btn" style="background:#475569">Restart</button>
+    </div>
+  </main>
+  <script>
+  (()=>{
+    'use strict';
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreLabel = document.getElementById('score');
+    const livesLabel = document.getElementById('lives');
+    const crystalLabel = document.getElementById('crystals');
+    
+    let ship = { x: 160, y: 420, width: 32, height: 32, speed: 280, shielded: false, shieldTime: 0 };
+    let meteors = [];
+    let crystals = [];
+    let stars = [];
+    let score = 0;
+    let lives = 3;
+    let crystalsCollected = 0;
+    let running = true;
+    let lastTime = performance.now();
+    let moveLeft = false, moveRight = false;
+
+    // Init background stars
+    for (let i = 0; i < 60; i++) {
+      stars.push({ x: Math.random() * 360, y: Math.random() * 480, size: Math.random() * 2 + 1, speed: Math.random() * 80 + 30 });
+    }
+
+    function reset() {
+      ship.x = 160;
+      ship.y = 420;
+      ship.shielded = false;
+      ship.shieldTime = 0;
+      meteors = [];
+      crystals = [];
+      score = 0;
+      lives = 3;
+      crystalsCollected = 0;
+      running = true;
+      updateUI();
+    }
+
+    function updateUI() {
+      scoreLabel.textContent = 'Score: ' + Math.floor(score);
+      livesLabel.textContent = 'Lives: ' + '❤️'.repeat(Math.max(0, lives));
+      crystalLabel.textContent = '💎 ' + crystalsCollected;
+    }
+
+    function spawnMeteor() {
+      if (Math.random() < 0.045) {
+        meteors.push({
+          x: Math.random() * 320 + 10,
+          y: -30,
+          radius: Math.random() * 12 + 10,
+          speed: Math.random() * 120 + 130 + (score * 0.05)
+        });
+      }
+    }
+
+    function spawnCrystal() {
+      if (Math.random() < 0.015) {
+        crystals.push({
+          x: Math.random() * 320 + 10,
+          y: -20,
+          size: 14,
+          speed: Math.random() * 60 + 100
+        });
+      }
+    }
+
+    // Touch / Pointer controls
+    function setShipX(clientX) {
+      const rect = canvas.getBoundingClientRect();
+      const canvasX = (clientX - rect.left) * (360 / rect.width);
+      ship.x = Math.max(16, Math.min(344 - ship.width, canvasX - ship.width / 2));
+    }
+
+    canvas.addEventListener('pointerdown', e => setShipX(e.clientX));
+    canvas.addEventListener('pointermove', e => { if (e.buttons > 0) setShipX(e.clientX); });
+
+    document.getElementById('left-btn').addEventListener('pointerdown', () => moveLeft = true);
+    document.getElementById('left-btn').addEventListener('pointerup', () => moveLeft = false);
+    document.getElementById('right-btn').addEventListener('pointerdown', () => moveRight = true);
+    document.getElementById('right-btn').addEventListener('pointerup', () => moveRight = false);
+
+    window.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft = true;
+      if (e.key === 'ArrowRight' || e.key === 'd') moveRight = true;
+    });
+    window.addEventListener('keyup', e => {
+      if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft = false;
+      if (e.key === 'ArrowRight' || e.key === 'd') moveRight = false;
+    });
+
+    document.getElementById('restart-btn').addEventListener('click', reset);
+
+    // Parent messaging for hints / revives
+    window.addEventListener('message', e => {
+      if (!e.data) return;
+      if (e.data.type === 'unplug:revive') {
+        lives = Math.max(lives + 1, 1);
+        ship.shielded = true;
+        ship.shieldTime = 4.0;
+        running = true;
+        updateUI();
+        requestAnimationFrame(gameLoop);
+      }
+      if (e.data.type === 'unplug:hint') {
+        ship.shielded = true;
+        ship.shieldTime = 6.0;
+      }
+    });
+
+    function gameLoop(now) {
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+
+      if (running) {
+        score += dt * 10;
+        updateUI();
+
+        if (moveLeft) ship.x = Math.max(10, ship.x - ship.speed * dt);
+        if (moveRight) ship.x = Math.min(318, ship.x + ship.speed * dt);
+
+        if (ship.shielded) {
+          ship.shieldTime -= dt;
+          if (ship.shieldTime <= 0) ship.shielded = false;
+        }
+
+        spawnMeteor();
+        spawnCrystal();
+
+        // Update stars
+        for (let s of stars) {
+          s.y += s.speed * dt;
+          if (s.y > 480) { s.y = 0; s.x = Math.random() * 360; }
+        }
+
+        // Update crystals
+        for (let i = crystals.length - 1; i >= 0; i--) {
+          let c = crystals[i];
+          c.y += c.speed * dt;
+          if (Math.hypot((ship.x + 16) - c.x, (ship.y + 16) - c.y) < 24) {
+            crystals.splice(i, 1);
+            crystalsCollected++;
+            score += 50;
+            updateUI();
+          } else if (c.y > 500) {
+            crystals.splice(i, 1);
+          }
+        }
+
+        // Update meteors & collisions
+        for (let i = meteors.length - 1; i >= 0; i--) {
+          let m = meteors[i];
+          m.y += m.speed * dt;
+          if (Math.hypot((ship.x + 16) - m.x, (ship.y + 16) - m.y) < (m.radius + 14)) {
+            meteors.splice(i, 1);
+            if (!ship.shielded) {
+              lives--;
+              updateUI();
+              if (lives <= 0) {
+                running = false;
+                window.parent.postMessage({ type: 'unplug:gameover', score: Math.floor(score), game: 'space_dodge' }, '*');
+              } else {
+                ship.shielded = true;
+                ship.shieldTime = 2.0;
+              }
+            }
+          } else if (m.y > 500) {
+            meteors.splice(i, 1);
+          }
+        }
+      }
+
+      // RENDER
+      ctx.clearRect(0, 0, 360, 480);
+
+      // Stars
+      ctx.fillStyle = '#94a3b8';
+      for (let s of stars) {
+        ctx.fillRect(s.x, s.y, s.size, s.size);
+      }
+
+      // Crystals
+      ctx.fillStyle = '#38bdf8';
+      for (let c of crystals) {
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Meteors
+      ctx.fillStyle = '#ea580c';
+      for (let m of meteors) {
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#c2410c';
+        ctx.beginPath();
+        ctx.arc(m.x - 3, m.y - 3, m.radius * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ea580c';
+      }
+
+      // Spaceship
+      ctx.fillStyle = '#3b82f6';
+      ctx.beginPath();
+      ctx.moveTo(ship.x + 16, ship.y);
+      ctx.lineTo(ship.x + 32, ship.y + 32);
+      ctx.lineTo(ship.x + 16, ship.y + 24);
+      ctx.lineTo(ship.x, ship.y + 32);
+      ctx.closePath();
+      ctx.fill();
+
+      // Shield effect
+      if (ship.shielded) {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(ship.x + 16, ship.y + 16, 26, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      if (!running && lives <= 0) {
+        ctx.fillStyle = 'rgba(11, 15, 25, 0.85)';
+        ctx.fillRect(0, 0, 360, 480);
+        ctx.fillStyle = '#f87171';
+        ctx.font = 'bold 24px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('CRASHED IN DEBRIS', 180, 210);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '16px system-ui';
+        ctx.fillText('Score: ' + Math.floor(score), 180, 245);
+        ctx.fillText('Tap below to watch an ad for +1 life!', 180, 275);
+      }
+
+      if (running || lives <= 0) {
+        requestAnimationFrame(gameLoop);
+      }
+    }
+
+    reset();
+    requestAnimationFrame(gameLoop);
+    window.parent.postMessage({ type: 'unplug:ready' }, '*');
+  })();
+  </script>
+</body>
+</html>

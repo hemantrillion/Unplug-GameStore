@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UNPLUG Studio — Developer Workspace & Arcade</title>
+  <link rel="stylesheet" href="studio.css">
+  <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+  <!-- Header -->
+  <header class="studio-header">
+    <div class="brand-section">
+      <div class="brand-badge">u</div>
+      <div class="brand-title">UNPLUG Studio</div>
+      <span class="brand-tag">v0.1.0</span>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-view="workshop">🛠️ Game Workshop</button>
+      <button class="nav-tab" data-view="arcade">▦ Desktop Arcade</button>
+      <button class="nav-tab" data-view="platform">📦 Platform & APK Sync</button>
+      <button class="nav-tab" data-view="connection">⚙️ Server Connection</button>
+    </nav>
+
+    <div class="header-actions">
+      <div class="ad-economy-hud">
+        <span id="hud-adfree-status" class="economy-pill">⭐ Free Tier (Ads Active)</span>
+        <button id="btn-toggle-adfree" class="btn-adfree-toggle" title="Simulate In-App Purchase of Ad-Free Experience">Toggle Ad-Free Pass</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="studio-main">
+    <!-- 1. WORKSHOP VIEW -->
+    <section id="view-workshop" class="studio-view active">
+      <!-- Left Column: Code Editor & SDK Tools -->
+      <div class="workshop-left">
+        <div class="editor-toolbar">
+          <div class="template-selector-group">
+            <label for="template-select">Game Template:</label>
+            <select id="template-select" class="select-game">
+              <option value="bounce">Bounce Arcade (Paddle & Bricks)</option>
+              <option value="snake">Neon Trail (Snake & Food)</option>
+              <option value="memory">Memory Garden (Cards & Peek)</option>
+              <option value="space_dodge">Space Dodge (Meteors & Shield)</option>
+              <option value="starter">+ New Custom Game Template</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <input type="file" id="import-file-input" accept=".html,.htm" style="display:none;">
+            <button id="btn-import-html" class="btn-secondary" title="Load an HTML game file from your computer">📂 Import HTML</button>
+            <button id="btn-run-code" class="btn-primary" title="Load code into live sandbox">▶ Run Game</button>
+          </div>
+        </div>
+
+        <div class="meta-inputs-bar">
+          <input id="game-title" type="text" placeholder="Game Title" style="flex:1.4;" value="Bounce Arcade">
+          <input id="game-id" type="text" placeholder="game_id" style="flex:1;" value="bounce">
+          <input id="game-author" type="text" placeholder="Author" style="flex:1;" value="UNPLUG Creator">
+          <input id="game-version" type="text" placeholder="Version" style="width:70px;" value="1.0.0">
+        </div>
+
+        <div class="editor-wrapper">
+          <textarea id="code-editor" spellcheck="false" placeholder="Write your HTML5 game code here..."></textarea>
+        </div>
+
+        <div class="editor-footer">
+          <div class="footer-tags">
+            <span style="font-weight:600; color:var(--text-muted);">Insert SDK:</span>
+            <span class="tag-sdk-helper" data-sdk="ready">+ ready</span>
+            <span class="tag-sdk-helper" data-sdk="gameover">+ gameover</span>
+            <span class="tag-sdk-helper" data-sdk="revive">+ revive</span>
+            <span class="tag-sdk-helper" data-sdk="hint">+ hint</span>
+            <span class="tag-sdk-helper" data-sdk="score">+ score</span>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button id="btn-validate-contract" class="btn-secondary">✓ Validate</button>
+            <button id="btn-save-local" class="btn-secondary">💾 Save</button>
+            <button id="btn-export-pkg" class="btn-secondary">📦 Export</button>
+            <button id="btn-push-android" class="btn-success">🚀 Push to Android</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Interactive Sandbox & Ad Economy Tester -->
+      <div class="workshop-right">
+        <div class="sandbox-header">
+          <div class="sandbox-title">
+            <span>🎮 Live Game Sandbox</span>
+            <span id="sandbox-status-pill" style="font-size:11px; padding:2px 8px; border-radius:10px; background:var(--bg-card); color:var(--green-hover);">Ready</span>
+          </div>
+          <div class="sandbox-device-toggles">
+            <button class="device-btn active" data-device="portrait">📱 Portrait</button>
+            <button class="device-btn" data-device="landscape">💻 Landscape</button>
+            <button class="device-btn" data-device="responsive">↔ Responsive</button>
+          </div>
+        </div>
+
+        <div class="sandbox-runner-container">
+          <div id="sandbox-frame-box" class="sandbox-device-frame portrait">
+            <iframe id="game-sandbox-frame" sandbox="allow-scripts allow-modals"></iframe>
+          </div>
+        </div>
+
+        <!-- Ad Economy & Event Tester Panel -->
+        <div class="ad-simulator-panel">
+          <div class="panel-subheading">
+            <span>Simulated Ad Economy & Contract Tester</span>
+            <span id="economy-active-status" style="color:var(--gold); font-size:10.5px;">Ads Enabled · Rewarded Life/Hints Active</span>
+          </div>
+          <div class="ad-actions-row">
+            <button id="btn-sim-ad-life" class="btn-ad-action gold">📺 Test Rewarded Ad (+1 Life)</button>
+            <button id="btn-sim-ad-hint" class="btn-ad-action gold">💡 Test Rewarded Ad (Hint)</button>
+            <button id="btn-sim-restart" class="btn-ad-action">↺ Restart Game</button>
+            <button id="btn-sim-clear-logs" class="btn-ad-action" style="margin-left:auto;">Clear Log</button>
+          </div>
+          <div id="event-log-console" class="event-monitor-console">
+            <div class="event-log-entry"><span class="log-time">[00:00:00]</span> <span class="log-tx">STUDIO READY</span> — Interactive Developer Workspace Initialized.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. ARCADE PLAY VIEW -->
+    <section id="view-arcade" class="studio-view">
+      <div class="arcade-hero">
+        <div>
+          <h2>Desktop Arcade Player</h2>
+          <p>Play built-in games and your custom creations offline on desktop. High scores, simulated ad rewards, extra lives and hints are tracked locally.</p>
+        </div>
+        <button id="btn-arcade-new-game" class="btn-primary" style="padding:10px 18px; font-size:13px;">+ Create New Game in Workshop</button>
+      </div>
+
+      <div class="arcade-grid" id="arcade-game-grid">
+        <!-- Cards generated by JS -->
+      </div>
+    </section>
+
+    <!-- 3. PLATFORM & APK SYNC VIEW -->
+    <section id="view-platform" class="studio-view">
+      <div class="sync-card">
+        <div class="sync-header">
+          <div>
+            <h3>Connected Android APK Source</h3>
+            <p>Direct sync between Desktop Developer Studio and the Android Game App build source.</p>
+          </div>
+          <span class="brand-tag">Native Bridge: <b id="bridge-status">Detecting...</b></span>
+        </div>
+
+        <div style="background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; font-family:var(--font-mono); font-size:12px;">
+          <div><strong>Android App Source Directory:</strong> <code>apps/android/www/games/</code></div>
+          <div style="margin-top:4px;"><strong>Compiled APK Output:</strong> <code>apps/android/android/app/build/outputs/apk/debug/app-debug.apk</code></div>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
+          <button id="btn-sync-current-to-apk" class="btn-success" style="padding:9px 16px;">🚀 Push Current Game to Android APK</button>
+          <button id="btn-build-apk-now" class="btn-primary" style="padding:9px 16px;">🔨 Build Android APK (Gradle)</button>
+          <button id="btn-open-apk-folder" class="btn-secondary" style="padding:9px 16px;">📁 Open APK Output Folder</button>
+        </div>
+      </div>
+
+      <div class="sync-card">
+        <h3>Installed Games in Android APK Bundle</h3>
+        <p style="color:var(--text-secondary); font-size:13px;">These games are pre-compiled and bundled inside the official Android APK (UNPLUG-Player-v0.1.0-debug.apk).</p>
+        <div class="installed-games-list" id="installed-games-list">
+          <!-- Loaded by JS -->
+        </div>
+      </div>
+
+      <div class="sync-card" id="build-log-card" style="display:none;">
+        <h3>Gradle Build Output</h3>
+        <pre id="build-log-console" style="background:#090c10; color:#4af626; font-family:var(--font-mono); font-size:12px; padding:14px; border-radius:8px; max-height:240px; overflow-y:auto; white-space:pre-wrap;"></pre>
+      </div>
+    </section>
+
+    <!-- 4. SERVER CONNECTION VIEW -->
+    <section id="view-connection" class="studio-view" style="padding:32px; max-width:800px; margin:0 auto; flex-direction:column; gap:20px;">
+      <div class="sync-card">
+        <h3>Server & Network Configuration</h3>
+        <p style="color:var(--text-secondary); font-size:13px;">UNPLUG Studio is built offline-first. You can work completely locally without an internet connection or connect to a hosted UNPLUG platform.</p>
+        
+        <div style="margin-top:16px;">
+          <label style="font-size:12px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:6px;">Current Operating Mode:</label>
+          <div style="font-size:14px; font-weight:600; color:var(--green-hover);">✓ Standalone Offline Developer Studio (Active)</div>
+        </div>
+
+        <div style="margin-top:20px;">
+          <label style="font-size:12px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:6px;">Connect to Remote UNPLUG Service (Optional):</label>
+          <div style="display:flex; gap:8px;">
+            <input id="remote-service-url" type="url" placeholder="http://127.0.0.1:3000 or https://unplug.yourdomain.com" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:white; padding:8px 12px; border-radius:6px; font-size:13px;">
+            <button id="btn-save-remote-service" class="btn-primary">Connect Service ↗</button>
+          </div>
+          <small style="display:block; margin-top:6px; color:var(--text-muted); font-size:11px;">For multi-tenant review, administrator approvals and online multiplayer matchmaking.</small>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Simulated Rewarded Video Ad Modal -->
+  <div id="ad-modal" class="ad-modal-backdrop">
+    <div class="ad-modal-window">
+      <div class="ad-modal-top">
+        <span class="ad-badge">SPONSORED AD · REWARD PENDING</span>
+        <span id="ad-timer-countdown" class="ad-countdown">Reward unlocks in 5s...</span>
+      </div>
+      <div class="ad-video-mockup">
+        <div class="ad-sponsor-logo">⚡</div>
+        <h3 style="font-size:18px; margin-bottom:4px;">UNPLUG Gaming Network</h3>
+        <p style="font-size:12px; opacity:0.85;">Watch this brief message to earn your in-game reward!</p>
+        <div class="ad-progress-track">
+          <div id="ad-progress-bar" class="ad-progress-bar"></div>
+        </div>
+      </div>
+      <div class="ad-modal-bottom">
+        <span id="ad-reward-type-label" class="ad-reward-label">Reward: +1 Extra Life</span>
+        <button id="btn-claim-ad-reward" class="btn-success" disabled>Claim Reward</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Play Modal -->
+  <div id="play-modal" class="play-modal-backdrop">
+    <div class="play-modal-header">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <strong id="arcade-playing-title" style="font-size:15px;">Game</strong>
+        <span id="arcade-score-pill" style="font-size:12px; color:var(--gold); font-weight:600;">Score: 0</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button id="btn-arcade-hint" class="btn-secondary" style="font-size:12px;">💡 Hint</button>
+        <button id="btn-arcade-close" class="btn-primary" style="background:#30363d; font-size:12px;">Close ×</button>
+      </div>
+    </div>
+    <div class="play-modal-content">
+      <div class="play-frame-holder">
+        <iframe id="arcade-game-frame" sandbox="allow-scripts allow-modals"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script src="studio.js"></script>
+</body>
+</html>
